@@ -48,10 +48,12 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(195 100% 45%), hsl(195 100% 65%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 45%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 40%), hsl(38 92% 50%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
     
     --shadow-glow: 0 0 40px hsl(var(--primary) / 0.3);
     --shadow-success: 0 0 40px hsl(var(--success) / 0.3);
     --shadow-warning: 0 0 40px hsl(var(--warning) / 0.3);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -64,5 +66,21 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 }

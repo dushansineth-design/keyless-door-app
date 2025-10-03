@@ -61,11 +61,16 @@ export default {
         "gradient-primary": "var(--gradient-primary)",
         "gradient-success": "var(--gradient-success)",
         "gradient-warning": "var(--gradient-warning)",
+        "gradient-glass": "var(--gradient-glass)",
       },
       boxShadow: {
         "glow": "var(--shadow-glow)",
         "success": "var(--shadow-success)",
         "warning": "var(--shadow-warning)",
+        "glass": "var(--shadow-glass)",
+      },
+      backdropBlur: {
+        'xs': '2px',
       },
       borderRadius: {
         lg: "var(--radius)",
