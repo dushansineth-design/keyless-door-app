@@ -4,13 +4,13 @@ import { Lock, Delete } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PinEntryProps {
+  correctPin: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export const PinEntry = ({ onSuccess, onCancel }: PinEntryProps) => {
+export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => {
   const [pin, setPin] = useState("");
-  const correctPin = "1234"; // In real app, this would be securely stored
 
   const handleNumberClick = (num: string) => {
     if (pin.length < 4) {

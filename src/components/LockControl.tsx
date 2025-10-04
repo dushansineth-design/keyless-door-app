@@ -6,11 +6,21 @@ import { PinEntry } from "./PinEntry";
 
 interface LockControlProps {
   lockName: string;
+  lockId: string;
+  isLocked: boolean;
+  pinCode: string;
+  onToggle: () => void;
   onBack: () => void;
 }
 
-export const LockControl = ({ lockName, onBack }: LockControlProps) => {
-  const [isLocked, setIsLocked] = useState(true);
+export const LockControl = ({ 
+  lockName, 
+  lockId,
+  isLocked, 
+  pinCode,
+  onToggle,
+  onBack 
+}: LockControlProps) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showPinEntry, setShowPinEntry] = useState(false);
 
@@ -27,7 +37,7 @@ export const LockControl = ({ lockName, onBack }: LockControlProps) => {
   const performUnlock = () => {
     setIsAnimating(true);
     setTimeout(() => {
-      setIsLocked(false);
+      onToggle();
       setIsAnimating(false);
       setShowPinEntry(false);
     }, 300);
@@ -36,7 +46,7 @@ export const LockControl = ({ lockName, onBack }: LockControlProps) => {
   const performLock = () => {
     setIsAnimating(true);
     setTimeout(() => {
-      setIsLocked(true);
+      onToggle();
       setIsAnimating(false);
     }, 300);
   };
@@ -45,6 +55,7 @@ export const LockControl = ({ lockName, onBack }: LockControlProps) => {
     <>
       {showPinEntry && (
         <PinEntry
+          correctPin={pinCode}
           onSuccess={performUnlock}
           onCancel={() => setShowPinEntry(false)}
         />

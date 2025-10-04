@@ -1,54 +1,117 @@
-import { useState } from "react";
-import { Settings, Wifi, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Settings, Wifi, Lock, Unlock, ArrowLeft, LogOut, Plus, Home } from "lucide-react";
 import { LockControl } from "@/components/LockControl";
 import { LockCard } from "@/components/LockCard";
-
-interface Lock {
-  id: string;
-  name: string;
-  isLocked: boolean;
-  battery: number;
-}
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useLocks } from "@/hooks/useLocks";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [selectedLock, setSelectedLock] = useState<string | null>(null);
-  const [locks, setLocks] = useState<Lock[]>([
-    { id: "1", name: "Front Door", isLocked: true, battery: 87 },
-    { id: "2", name: "Back Door", isLocked: false, battery: 45 },
-    { id: "3", name: "Garage", isLocked: true, battery: 92 },
-  ]);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { locks, loading, toggleLock } = useLocks(user?.id);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You've been successfully signed out.",
+    });
+  };
+
+  const handleAddLock = async () => {
+    try {
+      const { error } = await supabase.from('locks').insert({
+        user_id: user.id,
+        name: `Lock ${locks.length + 1}`,
+        is_locked: true,
+        battery_level: 100,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Lock added",
+        description: "New lock has been added successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const currentLock = locks.find(lock => lock.id === selectedLock);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentLock) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <header className="flex items-center justify-between p-6 glass border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <div className="h-4 w-4 border-2 border-primary-foreground rounded" />
-            </div>
-            <h1 className="text-xl font-bold text-foreground">SecureLock</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-success">
-              <Wifi className="h-4 w-4" />
-              <span className="text-xs font-medium">Connected</span>
-            </div>
-          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setSelectedLock(null)}
+            className="hover:bg-white/5"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-lg font-semibold">{currentLock.name}</h1>
+          <Button variant="ghost" size="icon" className="hover:bg-white/5">
+            <Settings className="w-5 h-5" />
+          </Button>
         </header>
 
         <main className="flex-1 flex items-center justify-center py-12">
           <LockControl 
             lockName={currentLock.name} 
+            lockId={currentLock.id}
+            isLocked={currentLock.is_locked}
+            pinCode={currentLock.pin_code}
+            onToggle={() => toggleLock(currentLock.id, currentLock.is_locked)}
             onBack={() => setSelectedLock(null)} 
           />
         </main>
 
         <footer className="p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            All activity is encrypted and logged
+            Battery: {currentLock.battery_level}% • All activity is encrypted and logged
           </p>
         </footer>
       </div>
@@ -57,7 +120,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="flex items-center justify-between p-6 glass border-b border-white/10 sticky top-0 z-10 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
@@ -70,13 +132,17 @@ const Index = () => {
             <Wifi className="h-4 w-4" />
             <span className="text-xs font-medium">Connected</span>
           </div>
-          <Button size="icon" variant="ghost" className="text-foreground">
-            <Settings className="h-5 w-5" />
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            onClick={handleSignOut}
+            className="text-foreground hover:bg-white/5"
+          >
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 p-6 space-y-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-foreground">
@@ -86,37 +152,57 @@ const Index = () => {
           <p className="text-muted-foreground">Manage all your smart locks</p>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="glass rounded-2xl p-4 shadow-glass">
             <div className="text-3xl font-bold text-success">
-              {locks.filter(l => l.isLocked).length}
+              {locks.filter(l => l.is_locked).length}
             </div>
             <div className="text-sm text-muted-foreground">Locked</div>
           </div>
           <div className="glass rounded-2xl p-4 shadow-glass">
             <div className="text-3xl font-bold text-warning">
-              {locks.filter(l => !l.isLocked).length}
+              {locks.filter(l => !l.is_locked).length}
             </div>
             <div className="text-sm text-muted-foreground">Unlocked</div>
           </div>
         </div>
 
-        {/* Locks List */}
         <div className="space-y-3">
-          {locks.map((lock) => (
-            <LockCard
-              key={lock.id}
-              name={lock.name}
-              isLocked={lock.isLocked}
-              battery={lock.battery}
-              onClick={() => setSelectedLock(lock.id)}
-            />
-          ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-muted-foreground">YOUR LOCKS</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddLock}
+              className="hover:bg-white/5"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add Lock
+            </Button>
+          </div>
+          
+          {locks.length === 0 ? (
+            <div className="glass rounded-2xl p-8 shadow-glass text-center">
+              <Lock className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-4">No locks yet</p>
+              <Button onClick={handleAddLock} className="bg-gradient-primary">
+                Add Your First Lock
+              </Button>
+            </div>
+          ) : (
+            locks.map((lock) => (
+              <LockCard
+                key={lock.id}
+                name={lock.name}
+                isLocked={lock.is_locked}
+                battery={lock.battery_level}
+                onClick={() => setSelectedLock(lock.id)}
+              />
+            ))
+          )}
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="p-6 text-center glass border-t border-white/10">
         <p className="text-sm text-muted-foreground">
           All activity is encrypted and logged
