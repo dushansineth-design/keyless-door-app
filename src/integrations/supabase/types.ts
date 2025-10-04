@@ -14,7 +14,94 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      lock_activity: {
+        Row: {
+          action: string
+          id: string
+          lock_id: string
+          timestamp: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          lock_id: string
+          timestamp?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          lock_id?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lock_activity_lock_id_fkey"
+            columns: ["lock_id"]
+            isOneToOne: false
+            referencedRelation: "locks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locks: {
+        Row: {
+          battery_level: number | null
+          created_at: string | null
+          id: string
+          is_locked: boolean | null
+          name: string
+          pin_code: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          name: string
+          pin_code?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          name?: string
+          pin_code?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
