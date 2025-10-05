@@ -8,7 +8,6 @@ interface LockControlProps {
   lockName: string;
   lockId: string;
   isLocked: boolean;
-  pinCode: string;
   onToggle: () => void;
   onBack: () => void;
 }
@@ -17,7 +16,6 @@ export const LockControl = ({
   lockName, 
   lockId,
   isLocked, 
-  pinCode,
   onToggle,
   onBack 
 }: LockControlProps) => {
@@ -55,7 +53,7 @@ export const LockControl = ({
     <>
       {showPinEntry && (
         <PinEntry
-          correctPin={pinCode}
+          lockId={lockId}
           onSuccess={performUnlock}
           onCancel={() => setShowPinEntry(false)}
         />

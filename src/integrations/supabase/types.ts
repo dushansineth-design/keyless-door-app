@@ -107,7 +107,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      hash_pin: {
+        Args: { pin_text: string }
+        Returns: string
+      }
+      verify_pin: {
+        Args: { lock_uuid: string; pin_attempt: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

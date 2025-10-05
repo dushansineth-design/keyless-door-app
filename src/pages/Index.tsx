@@ -44,19 +44,59 @@ const Index = () => {
   };
 
   const handleAddLock = async () => {
-    try {
-      const { error } = await supabase.from('locks').insert({
-        user_id: user.id,
-        name: `Lock ${locks.length + 1}`,
-        is_locked: true,
-        battery_level: 100,
-      });
+    if (!user) return;
 
-      if (error) throw error;
+    const lockName = prompt("Enter lock name:");
+    if (!lockName) return;
+
+    const pinCode = prompt("Enter 4-digit PIN code:");
+    if (!pinCode || pinCode.length !== 4 || !/^\d+$/.test(pinCode)) {
+      toast({
+        title: "Invalid PIN",
+        description: "PIN must be exactly 4 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // First create the lock without a PIN
+      const { data: newLock, error: insertError } = await supabase
+        .from("locks")
+        .insert({
+          name: lockName,
+          user_id: user.id,
+          is_locked: true,
+          battery_level: 100,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Then set the PIN securely via edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/set-lock-pin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ lockId: newLock.id, pin: pinCode }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to set PIN");
+      }
 
       toast({
-        title: "Lock added",
-        description: "New lock has been added successfully.",
+        title: "Success",
+        description: "Lock added successfully",
       });
     } catch (error: any) {
       toast({
@@ -103,7 +143,6 @@ const Index = () => {
             lockName={currentLock.name} 
             lockId={currentLock.id}
             isLocked={currentLock.is_locked}
-            pinCode={currentLock.pin_code}
             onToggle={() => toggleLock(currentLock.id, currentLock.is_locked)}
             onBack={() => setSelectedLock(null)} 
           />

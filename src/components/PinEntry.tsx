@@ -2,28 +2,69 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Lock, Delete } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PinEntryProps {
-  correctPin: string;
+  lockId: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => {
+export const PinEntry = ({ lockId, onSuccess, onCancel }: PinEntryProps) => {
   const [pin, setPin] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState("");
+
+  const verifyPin = async (enteredPin: string) => {
+    setIsVerifying(true);
+    setError("");
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError("Not authenticated");
+        setPin("");
+        setIsVerifying(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-lock-pin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ lockId, pin: enteredPin }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.valid) {
+        onSuccess();
+      } else {
+        setError("Incorrect PIN");
+        setPin("");
+      }
+    } catch (err) {
+      console.error('PIN verification error:', err);
+      setError("Failed to verify PIN");
+      setPin("");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleNumberClick = (num: string) => {
-    if (pin.length < 4) {
+    if (pin.length < 4 && !isVerifying) {
       const newPin = pin + num;
       setPin(newPin);
       
       if (newPin.length === 4) {
         setTimeout(() => {
-          if (newPin === correctPin) {
-            onSuccess();
-          } else {
-            setPin("");
-          }
+          verifyPin(newPin);
         }, 300);
       }
     }
@@ -42,6 +83,9 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
           </div>
           <h2 className="text-2xl font-bold mb-2">Enter PIN</h2>
           <p className="text-sm text-muted-foreground">Enter your 4-digit PIN to unlock</p>
+          {error && (
+            <p className="text-sm text-destructive mt-2">{error}</p>
+          )}
         </div>
 
         {/* PIN Display */}
@@ -51,7 +95,8 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
               key={i}
               className={cn(
                 "w-14 h-14 rounded-xl glass flex items-center justify-center text-2xl font-bold transition-all",
-                pin.length > i ? "bg-primary/20 text-primary" : ""
+                pin.length > i ? "bg-primary/20 text-primary" : "",
+                error && "border-2 border-destructive"
               )}
             >
               {pin.length > i ? "•" : ""}
@@ -66,6 +111,7 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
               key={num}
               variant="ghost"
               onClick={() => handleNumberClick(num.toString())}
+              disabled={isVerifying}
               className="h-16 text-xl font-semibold glass hover:bg-primary/20 hover:text-primary transition-all"
             >
               {num}
@@ -74,6 +120,7 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
           <Button
             variant="ghost"
             onClick={onCancel}
+            disabled={isVerifying}
             className="h-16 glass hover:bg-destructive/20 hover:text-destructive transition-all"
           >
             Cancel
@@ -81,6 +128,7 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
           <Button
             variant="ghost"
             onClick={() => handleNumberClick("0")}
+            disabled={isVerifying}
             className="h-16 text-xl font-semibold glass hover:bg-primary/20 hover:text-primary transition-all"
           >
             0
@@ -88,6 +136,7 @@ export const PinEntry = ({ correctPin, onSuccess, onCancel }: PinEntryProps) => 
           <Button
             variant="ghost"
             onClick={handleDelete}
+            disabled={isVerifying}
             className="h-16 glass hover:bg-warning/20 hover:text-warning transition-all"
           >
             <Delete className="w-5 h-5" />

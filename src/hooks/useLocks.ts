@@ -7,7 +7,7 @@ export interface Lock {
   name: string;
   is_locked: boolean;
   battery_level: number;
-  pin_code: string;
+  // Note: pin_code is never exposed to the client for security
 }
 
 export function useLocks(userId: string | undefined) {
@@ -50,7 +50,7 @@ export function useLocks(userId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from('locks')
-        .select('*')
+        .select('id, name, is_locked, battery_level, created_at, user_id')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
