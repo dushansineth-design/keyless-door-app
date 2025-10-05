@@ -24,7 +24,7 @@ export function useLocks(userId: string | undefined) {
 
     fetchLocks();
 
-    // Subscribe to realtime updates
+    // Subscribe to realtime updates on the secure view
     const channel = supabase
       .channel('locks-changes')
       .on(
@@ -48,9 +48,10 @@ export function useLocks(userId: string | undefined) {
 
   const fetchLocks = async () => {
     try {
+      // Query the secure view instead of the locks table to prevent pin_code access
       const { data, error } = await supabase
-        .from('locks')
-        .select('id, name, is_locked, battery_level, created_at, user_id')
+        .from('locks_secure')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

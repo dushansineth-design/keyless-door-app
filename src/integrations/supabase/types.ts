@@ -41,6 +41,13 @@ export type Database = {
             referencedRelation: "locks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lock_activity_lock_id_fkey"
+            columns: ["lock_id"]
+            isOneToOne: false
+            referencedRelation: "locks_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       locks: {
@@ -104,9 +111,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      locks_secure: {
+        Row: {
+          battery_level: number | null
+          created_at: string | null
+          id: string | null
+          is_locked: boolean | null
+          name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          battery_level?: number | null
+          created_at?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          battery_level?: number | null
+          created_at?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      check_lock_ownership: {
+        Args: { lock_user_id: string }
+        Returns: boolean
+      }
       hash_pin: {
         Args: { pin_text: string }
         Returns: string
