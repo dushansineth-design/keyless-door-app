@@ -61,6 +61,7 @@ const Index = () => {
 
     try {
       // First create the lock without a PIN
+      // SECURITY: Explicitly exclude pin_code from response to prevent exposure
       const { data: newLock, error: insertError } = await supabase
         .from("locks")
         .insert({
@@ -69,7 +70,7 @@ const Index = () => {
           is_locked: true,
           battery_level: 100,
         })
-        .select()
+        .select('id, name, user_id, is_locked, battery_level, created_at, updated_at')
         .single();
 
       if (insertError) throw insertError;

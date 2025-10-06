@@ -69,10 +69,12 @@ export function useLocks(userId: string | undefined) {
 
   const toggleLock = async (lockId: string, currentState: boolean) => {
     try {
+      // SECURITY: Never select pin_code in responses to prevent exposure
       const { error } = await supabase
         .from('locks')
         .update({ is_locked: !currentState })
-        .eq('id', lockId);
+        .eq('id', lockId)
+        .select('id'); // Only return ID to verify update, never pin_code
 
       if (error) throw error;
 
